@@ -1,0 +1,238 @@
+/*
+  Flexbox Grid
+  Version: 1.0.0
+
+  A Flexbox based grid system built with scss
+  By Daniel Vernberg - daniel.vernberg@gmail.com
+*/
+
+/*
+  Setup of variables
+*/
+
+// Max width of continer class
+$container-xs: 510px;
+$container-sm: 740px;
+$container-md: 940px;
+$container-lg: 1600px;
+
+// Set number of columns
+$columns: 16;
+$gutter: 30px;
+
+// Set names for rows, columns and offset classes
+$class-row: 'row';
+$class-col: 'col';
+$class-offset: 'offset';
+
+// Screen sizes
+$screen-xs: 480px;
+$screen-sm: 768px;
+$screen-md: 992px;
+$screen-lg: 1600px;
+
+// Breakpoints to be looped over to create the grid system
+$breakpoints: (
+  (xs, $screen-xs),
+  (sm, $screen-sm),
+  (md, $screen-md),
+  (lg, $screen-lg)
+) !default;
+
+/*
+  Mixin to handle creation of reordering classes
+  and also set the reordering state in media breakpoints.
+  Call either with passed $state value of 'create' or not depending on if mixin
+  is called in a context of media query or not. 'create' should not be
+  passed in context of media query
+
+  @param {string} $prefix - the prefix for reordering classes.
+  @param {string} $state default:set - the state of which reordering classes should be set.
+*/
+@mixin column-reordering($prefix, $state: 'set') {
+  @if $state == 'create' {
+    .#{$class-col}-#{$prefix}-first, .#{$class-col}-#{$prefix}-last {
+      order: 0;
+    }
+  } @else {
+    .#{$class-col}-#{$prefix}-first {
+      order: -1;
+    }
+    .#{$class-col}-#{$prefix}-last {
+      order: 1;
+    }
+  }
+}
+
+/*
+  Mixin to dynamically set colums classes.
+  Also sets prefixed offset classes to offset columns based on screen size
+  Dependant on variable $columns count
+  @param {string} $prefix - the name of the class prefix
+*/
+@mixin columns-set($prefix) {
+  // xs columns already has below values
+  @if $prefix != 'xs' {
+    // set reordering classes
+    @include column-reordering($prefix);
+    @for $i from 1 through $columns {
+      .#{$class-col}-#{$prefix}-#{$i} {
+        flex: 0 0 100% / $columns * $i;
+        padding: 0 $gutter/2;
+      }
+      .#{$class-col}-#{$prefix}-#{$class-offset}-#{$i} {
+        margin-left: 100% / $columns * $i;
+      }
+
+    }
+  }
+}
+
+/*
+  Mixin to create default column classes.
+  Also creates prefixed offset classes to offset columns based on screen size
+  Dependant on variable $columns count.
+  @param {string} $prefix - the name of the class prefix
+*/
+@mixin columns-create($prefix) {
+  // xs columns initial state are not changed
+  // with media queries and thus are created with
+  // different flex value than the rest of the columns
+  @if $prefix != 'xs' {
+    // Set default reordering classes
+    @include column-reordering($prefix ,'create');
+    @for $i from 1 through $columns {
+      .#{$class-col}-#{$prefix}-#{$i} {
+        flex: 0 0 100%;
+      }
+      .#{$class-col}-#{$prefix}-#{$class-offset}-#{$i} {
+        margin-left: 0;
+      }
+    }
+  } @else {
+    @for $i from 1 through $columns {
+      .#{$class-col}-xs-#{$i} {
+        flex: 0 0 100% / $columns * $i;
+        padding: 0 $gutter/4;
+      }
+      .#{$class-col}-xs-#{$class-offset}-#{$i} {
+        margin-left: 100% / $columns * $i;
+      }
+    }
+  }
+}
+
+/*
+  Mixin to set .row helper classes for how to align the children
+  @param {string} $prefix - the  name of the class prefix
+*/
+@mixin alignment-set($prefix) {
+  .#{$prefix}-start {
+    justify-content: flex-start;
+  }
+  .#{$prefix}-end {
+    justify-content: flex-end;
+  }
+  .#{$prefix}-center {
+    justify-content: center;
+  }
+  .#{$prefix}-around {
+    justify-content: space-around;
+  }
+  .#{$prefix}-between {
+    justify-content: space-between;
+  }
+  .#{$prefix}-top {
+    align-items: flex-start;
+  }
+  .#{$prefix}-bottom {
+    align-items: flex-end;
+  }
+  .#{$prefix}-middle {
+    align-items: center;
+  }
+}
+
+/*
+  Mixins to setup containers
+*/
+@mixin containers-setup() {
+  .container {
+    max-width: $container-sm + $gutter;
+    margin: auto;
+    padding: 10px;
+  }
+  @media (min-width: $screen-md) {
+    .container {max-width: $container-md + $gutter;}
+  }
+  @media (min-width: $screen-lg) {
+    .container {max-width: $container-lg + $gutter;}
+  }
+
+  .container-fluid {
+    max-width: 98%;
+    margin: auto;
+    padding: 10px;
+    margin: 0.5%;
+  }
+}
+
+/*
+  Mixin to setup row class
+*/
+@mixin row-setup() {
+  .#{$class-row} {
+    display: flex;
+    flex-wrap: wrap;
+  }
+}
+
+/*
+  Mixin to setup box-sizing for all columns
+*/
+@mixin columns-box-sizing() {
+  [class*=#{$class-col}-] {
+    box-sizing: border-box;
+  }
+}
+
+/*
+  Mixins to be called to generate the grid
+ */
+@mixin grid-generate($prefix) {
+  @include columns-create($prefix);
+  @include alignment-set($prefix);
+}
+
+@mixin grid-size($prefix) {
+  @include columns-set($prefix);
+}
+
+/*
+  Build the grid system in 3 steps.
+  First setup containers, row flex class and handle box sizing for column classes.
+  Then loop through the breakpoints and create the grid and helper classes.
+  Lastly loop again and set measurements for each media breakpoint.
+*/
+
+// Step 1
+@include containers-setup();
+@include row-setup();
+@include columns-box-sizing();
+
+// Step 2
+@each $val in $breakpoints {
+  $namespace: nth($val, 1);
+  $size: nth($val, 2);
+  @include grid-generate($namespace);
+}
+
+// Step 3
+@each $val in $breakpoints {
+  $namespace: nth($val, 1);
+  $size: nth($val, 2);
+  @media(min-width: #{$size}) {
+    @include grid-size($namespace);
+  }
+}
+
